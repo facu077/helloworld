@@ -7,15 +7,11 @@ node {
 
 
     stage('Hello') {
-        steps {
-            echo 'Hello World ${POM_VERSION}'
-        }
+        echo 'Hello World ${POM_VERSION}'
     }
 
     stage('Hello2') {
-        steps {
-            echo 'Hello World ' ${POM_VERSION}
-        }
+        echo 'Hello World ' ${POM_VERSION}
     }
 
 
