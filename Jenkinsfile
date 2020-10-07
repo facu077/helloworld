@@ -1,5 +1,9 @@
 #!/usr/bin/env groovy
 
+environment {
+      POM_APP = readMavenPom().getProperties().getProperty('version')
+}
+
 node {
     stage('checkout') {
         checkout scm
@@ -7,11 +11,11 @@ node {
 
 
     stage('Hello') {
-        echo "Hello World ${POM_VERSION}"
+        echo "Hello World ${BUILD_NUMBER}"
     }
 
     stage('Hello2') {
-        echo "hola ${BUILD_NUMBER}"
+        echo "hola ${POM_APP}"
     }
 
 
