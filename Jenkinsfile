@@ -7,11 +7,11 @@ node {
 
 
     stage('Hello') {
-        echo 'Hello World ${POM_VERSION}'
+        echo "Hello World ${POM_VERSION}"
     }
 
     stage('Hello2') {
-        echo ${POM_VERSION}
+        echo "hola ${BUILD_NUMBER}"
     }
 
 
