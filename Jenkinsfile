@@ -11,7 +11,7 @@ node {
     }
 
     stage('Hello2') {
-        echo 'Hello World ' ${POM_VERSION}
+        echo ${POM_VERSION}
     }
 
 
