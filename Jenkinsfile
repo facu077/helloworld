@@ -21,44 +21,48 @@ node {
         sh "./mvnw -ntp com.github.eirslett:frontend-maven-plugin:install-node-and-npm -DnodeVersion=v12.16.1 -DnpmVersion=6.14.5"
     }
 
-    def pomVersion = readMavenPom().version   // read version
-    stage('HOLA') {
-        echo "${pomVersion}"
+    stage('npm install') {
+        sh "./mvnw -ntp com.github.eirslett:frontend-maven-plugin:npm"
     }
 
-    // stage('npm install') {
-    //     sh "./mvnw -ntp com.github.eirslett:frontend-maven-plugin:npm"
-    // }
+    stage('backend tests') {
+        try {
+            sh "./mvnw -ntp verify -P-webpack"
+        } catch(err) {
+            throw err
+        } finally {
+            junit '**/target/test-results/**/TEST-*.xml'
+        }
+    }
 
-    // stage('backend tests') {
-    //     try {
-    //         sh "./mvnw -ntp verify -P-webpack"
-    //     } catch(err) {
-    //         throw err
-    //     } finally {
-    //         junit '**/target/test-results/**/TEST-*.xml'
-    //     }
-    // }
+    stage('frontend tests') {
+        try {
+            sh "./mvnw -ntp com.github.eirslett:frontend-maven-plugin:npm -Dfrontend.npm.arguments='run test'"
+        } catch(err) {
+            throw err
+        } finally {
+            junit '**/target/test-results/**/TEST-*.xml'
+        }
+    }
 
-    // stage('frontend tests') {
-    //     try {
-    //         sh "./mvnw -ntp com.github.eirslett:frontend-maven-plugin:npm -Dfrontend.npm.arguments='run test'"
-    //     } catch(err) {
-    //         throw err
-    //     } finally {
-    //         junit '**/target/test-results/**/TEST-*.xml'
-    //     }
-    // }
+    stage('packaging') {
+        sh "./mvnw -ntp verify -P-webpack -Pprod -DskipTests"
+        archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+    }
 
-    // stage('packaging') {
-    //     sh "./mvnw -ntp verify -P-webpack -Pprod -DskipTests"
-    //     archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
-    // }
+    def dockerImage
+    stage('publish docker') {
+        withCredentials([usernamePassword(credentialsId: 'docker-credential', passwordVariable: 'DOCKER_REGISTRY_PWD', usernameVariable: 'DOCKER_REGISTRY_USER')]) {
+            sh "./mvnw -ntp jib:build"
+        }
+    }
 
-    // def dockerImage
-    // stage('publish docker') {
-    //     withCredentials([usernamePassword(credentialsId: 'docker-credential', passwordVariable: 'DOCKER_REGISTRY_PWD', usernameVariable: 'DOCKER_REGISTRY_USER')]) {
-    //         sh "./mvnw -ntp jib:build"
-    //     }
-    // }
+    def pomVersion = readMavenPom().version
+    stages {
+        stage('Deploy') {
+            steps {
+                sh "kubectl set image deployment/helloworld helloworld-app=facu077/helloworld:${pomVersion} --namespace=test"
+            }
+        }
+    }
 }
