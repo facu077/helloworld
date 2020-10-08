@@ -1,73 +1,59 @@
 #!/usr/bin/env groovy
 
-environment {
-      POM_APP = readMavenPom().getProperties().getProperty('version')
-}
-
 node {
     stage('checkout') {
         checkout scm
     }
 
-
-    stage('Hello') {
-        echo "Hello World ${BUILD_NUMBER}"
+    stage('check java') {
+        sh "java -version"
     }
 
-    stage('Hello2') {
-        echo "hola ${POM_APP}"
+    stage('clean') {
+        sh "chmod +x mvnw"
+        sh "./mvnw -ntp clean -P-webpack"
+    }
+    stage('nohttp') {
+        sh "./mvnw -ntp checkstyle:check"
     }
 
+    stage('install tools') {
+        sh "./mvnw -ntp com.github.eirslett:frontend-maven-plugin:install-node-and-npm -DnodeVersion=v12.16.1 -DnpmVersion=6.14.5"
+    }
 
-    // stage('check java') {
-    //     sh "java -version"
-    // }
+    stage('npm install') {
+        sh "./mvnw -ntp com.github.eirslett:frontend-maven-plugin:npm"
+    }
 
-    // stage('clean') {
-    //     sh "chmod +x mvnw"
-    //     sh "./mvnw -ntp clean -P-webpack"
-    // }
-    // stage('nohttp') {
-    //     sh "./mvnw -ntp checkstyle:check"
-    // }
+    stage('backend tests') {
+        try {
+            sh "./mvnw -ntp verify -P-webpack"
+        } catch(err) {
+            throw err
+        } finally {
+            junit '**/target/test-results/**/TEST-*.xml'
+        }
+    }
 
-    // stage('install tools') {
-    //     sh "./mvnw -ntp com.github.eirslett:frontend-maven-plugin:install-node-and-npm -DnodeVersion=v12.16.1 -DnpmVersion=6.14.5"
-    // }
+    stage('frontend tests') {
+        try {
+            sh "./mvnw -ntp com.github.eirslett:frontend-maven-plugin:npm -Dfrontend.npm.arguments='run test'"
+        } catch(err) {
+            throw err
+        } finally {
+            junit '**/target/test-results/**/TEST-*.xml'
+        }
+    }
 
-    // stage('npm install') {
-    //     sh "./mvnw -ntp com.github.eirslett:frontend-maven-plugin:npm"
-    // }
+    stage('packaging') {
+        sh "./mvnw -ntp verify -P-webpack -Pprod -DskipTests"
+        archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
+    }
 
-    // stage('backend tests') {
-    //     try {
-    //         sh "./mvnw -ntp verify -P-webpack"
-    //     } catch(err) {
-    //         throw err
-    //     } finally {
-    //         junit '**/target/test-results/**/TEST-*.xml'
-    //     }
-    // }
-
-    // stage('frontend tests') {
-    //     try {
-    //         sh "./mvnw -ntp com.github.eirslett:frontend-maven-plugin:npm -Dfrontend.npm.arguments='run test'"
-    //     } catch(err) {
-    //         throw err
-    //     } finally {
-    //         junit '**/target/test-results/**/TEST-*.xml'
-    //     }
-    // }
-
-    // stage('packaging') {
-    //     sh "./mvnw -ntp verify -P-webpack -Pprod -DskipTests"
-    //     archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true
-    // }
-
-    // def dockerImage
-    // stage('publish docker') {
-    //     withCredentials([usernamePassword(credentialsId: 'docker-credential', passwordVariable: 'DOCKER_REGISTRY_PWD', usernameVariable: 'DOCKER_REGISTRY_USER')]) {
-    //         sh "./mvnw -ntp jib:build"
-    //     }
-    // }
+    def dockerImage
+    stage('publish docker') {
+        withCredentials([usernamePassword(credentialsId: 'docker-credential', passwordVariable: 'DOCKER_REGISTRY_PWD', usernameVariable: 'DOCKER_REGISTRY_USER')]) {
+            sh "./mvnw -ntp jib:build"
+        }
+    }
 }

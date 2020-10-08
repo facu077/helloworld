@@ -5,7 +5,7 @@
 
     <groupId>com.um.helloworld</groupId>
     <artifactId>hello-world</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>Hello World</name>
 
@@ -571,7 +571,7 @@
                             <image>adoptopenjdk:11-jre-hotspot</image>
                         </from>
                         <to>
-                            <image>facu077/helloworld:latest</image>
+                            <image>facu077/helloworld:${project.version}</image>
                             <auth>
                                 <username>${DOCKER_REGISTRY_USER}</username>
                                 <password>${DOCKER_REGISTRY_PWD}</password>
