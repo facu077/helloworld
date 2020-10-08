@@ -58,11 +58,7 @@ node {
     }
 
     def pomVersion = readMavenPom().version
-    stages {
-        stage('Deploy') {
-            steps {
-                sh "kubectl set image deployment/helloworld helloworld-app=facu077/helloworld:${pomVersion} --namespace=test"
-            }
-        }
+    stage('Deploy') {
+        sh "kubectl set image deployment/helloworld helloworld-app=facu077/helloworld:${pomVersion} --namespace=test"
     }
 }
